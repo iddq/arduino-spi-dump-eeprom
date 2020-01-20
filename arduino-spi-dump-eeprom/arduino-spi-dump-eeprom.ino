@@ -1,17 +1,20 @@
 #include <SPI.h>
 
 #define SPI_READ_CMD 0x03
-#define CS_PIN 10
+#define CS_PIN1 52 // software CS
+#define CS_PIN2 10 // SPI hw CS
 
 #ifndef PIN_LED
 #define PIN_LED 13
 #endif
 
 void setup() {
-  Serial.begin(115200);
   pinMode(PIN_LED, OUTPUT);
-  pinMode(CS_PIN, OUTPUT);
-  digitalWrite(CS_PIN, HIGH);
+  pinMode(CS_PIN1, OUTPUT);
+  //pinMode(CS_PIN2, INPUT);
+  digitalWrite(CS_PIN1, HIGH);
+  //digitalWrite(CS_PIN2, HIGH);
+  Serial.begin(115200);
   SPI.begin();
 }
 
@@ -19,19 +22,24 @@ void read_eeprom(unsigned int num_bytes) {
   unsigned int addr;
   byte resp;
 
-  digitalWrite(CS_PIN, LOW);
+  SPI.beginTransaction(CS_PIN2, SPISettings(1000000, MSBFIRST, SPI_MODE0));
+  
+  digitalWrite(CS_PIN1, LOW);
 
   /* transmit read command with 3 byte start address */
-  SPI.transfer(SPI_READ_CMD);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
-  SPI.transfer(0x00);
+  SPI.transfer(CS_PIN2, SPI_READ_CMD);
+  SPI.transfer(CS_PIN2, 0x00);
+  SPI.transfer(CS_PIN2, 0x00);
+  //SPI.transfer(CS_PIN2, 0x00);
 
   for (addr = 0; addr < num_bytes; addr++) {
-    resp = SPI.transfer(0xff);
+    resp = SPI.transfer(CS_PIN2, 0xff);
     Serial.write(resp);
   }
-  digitalWrite(CS_PIN, HIGH);
+  digitalWrite(CS_PIN1, HIGH);
+
+  SPI.endTransaction();
+  
 }
 
 void dump() {
@@ -61,3 +69,4 @@ void loop() {
   }
 
 }
+
